@@ -1,9 +1,10 @@
 package main
 
 import (
-	"fmt"
 	"log"
 
+	"github.com/RobertoSuarez/vinculacion_api_graph/models"
+	"github.com/gofiber/fiber/v2"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 )
@@ -17,29 +18,36 @@ var schema = `
 `
 
 type Person struct {
-	FirstName string `db:"first_name"`
-	LastName  string `db:"last_name"`
-	Email     string `db:"email"`
+	FirstName string `db:"first_name" json:"first_name"`
+	LastName  string `db:"last_name" json:"last_name"`
+	Email     string `db:"email" json:"email"`
 }
 
 func main() {
-	db, err := sqlx.Connect("postgres", "user=postgres dbname=postgres sslmode=disable")
+	db, err := sqlx.Connect("postgres", "user=postgres password=postgres dbname=handtalker_db host=db sslmode=disable")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	db.MustExec(schema)
+	// db.MustExec(schema)
 
 	// insertamos usuarios con una transacción
-	tx := db.MustBegin()
-	tx.MustExec("INSERT INTO person (first_name, last_name, email) VALUES ($1, $2, $3)", "Roberto", "Suárez", "electrosonix12@gmail.com")
-	tx.MustExec("INSERT INTO person (first_name, last_name, email) VALUES ($1, $2, $3)", "Carlos", "Litardo", "carlos@gmail.com")
-	tx.Commit()
+	// tx := db.MustBegin()
+	// tx.MustExec("INSERT INTO person (first_name, last_name, email) VALUES ($1, $2, $3)", "Roberto", "Suárez", "electrosonix12@gmail.com")
+	// tx.MustExec("INSERT INTO person (first_name, last_name, email) VALUES ($1, $2, $3)", "Carlos", "Litardo", "carlos@gmail.com")
+	// tx.Commit()
 
-	people := []Person{}
+	app := fiber.New()
+	app.Get("/", func(c *fiber.Ctx) error {
+		users := []models.User{}
+		err := db.Select(&users, "SELECT id, email, password, firstname, lastname, url_photo, role_id, status FROM auth.users ORDER BY firstname ASC")
+		if err != nil {
+			log.Println(err)
+			return c.SendStatus(fiber.StatusInternalServerError)
+		}
 
-	db.Select(&people, "SELECT * FROM person ORDER BY first_name ASC")
+		return c.Status(fiber.StatusOK).JSON(users)
+	})
 
-	fmt.Printf("%#v \n", people)
-
+	log.Fatal(app.Listen(":3000"))
 }
