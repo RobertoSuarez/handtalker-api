@@ -26,5 +26,5 @@ func main() {
 	users.Get("/", userHandlers.HandleGetUsers)
 	users.Post("/", userHandlers.HandlePostUser)
 
-	log.Fatal(app.Listen(":3000"))
+	log.Fatal(app.Listen(":4000"))
 }
